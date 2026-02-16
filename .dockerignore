@@ -1,0 +1,50 @@
+# Test data (not needed in container)
+test_data/
+public_somatic_test/
+real_data/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (except README)
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Large bioinformatics files
+*.bam
+*.bam.bai
+*.cram
+*.cram.crai
+*.vcf.gz
+*.vcf.gz.tbi
+*.fa
+*.fasta
+*.fai
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# OS
+.DS_Store
+Thumbs.db

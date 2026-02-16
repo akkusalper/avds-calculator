@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  avds:
+    build: .
+    image: avds-calculator:latest
+    container_name: avds-calculator
+    volumes:
+      # Mount your local data directory to /data in the container
+      - ./data:/data
+    command: >
+      -v /data/input/variants.vcf.gz
+      -b /data/input/alignment.bam
+      -o /data/output/avds_results.tsv
+      -t 4
+    # Optional: Set memory limits
+    # mem_limit: 4g
+    # cpus: 4
