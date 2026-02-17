@@ -243,15 +243,18 @@ class AVDSCalculator:
 
     def calculate_strand_bias_strict(self, n_forward: int, n_reverse: int, n_alt: int) -> Tuple[float, float, bool]:
         """
-        Calculate strict strand bias score (SB_strict) with 25% minimum rule.
+        Calculate strict strand bias score (SB_strict) with statistical confidence.
+
+        Enhanced with binomial test and depth-aware penalties to account for
+        depth-dependent uncertainty in strand bias assessment.
 
         This is the most critical component for artifact detection.
 
         Algorithm:
         1. Calculate strand ratios
-        2. Apply 25% minimum rule with quadratic penalty
-        3. Calculate base strand bias
-        4. Apply penalty if needed
+        2. Perform binomial test for statistical significance
+        3. Apply depth-dependent confidence penalty
+        4. Calculate multi-factor strand bias score
 
         Args:
             n_forward: Alternative allele reads from forward strand
@@ -272,17 +275,84 @@ class AVDSCalculator:
         # Step 2: Calculate base strand bias
         base_sb = 1.0 - abs(n_forward - n_reverse) / n_alt
 
-        # Step 3: Apply 25% minimum rule
+        # Step 3: Check 25% minimum rule
         failed_25_rule = min_ratio < self.config.min_strand_ratio
 
-        if failed_25_rule:
-            # Apply quadratic penalty
+        # === NEW: Statistical confidence assessment ===
+
+        # Binomial test for statistical significance
+        pvalue = self._binomial_test(n_forward, n_alt)
+        is_significant = pvalue < 0.05
+
+        # Depth-based confidence
+        depth_conf = self._get_depth_confidence(n_alt)
+
+        # === Multi-factor decision logic ===
+
+        if n_alt >= 30 and is_significant:
+            # High depth + statistically significant imbalance
+            # → Strong evidence of artifact
+            sb_strict = base_sb * 0.3
+        elif n_alt < 10:
+            # Low depth → High uncertainty
+            if failed_25_rule:
+                # Low depth + ratio failure → Very suspicious
+                penalty_factor = min_ratio / self.config.min_strand_ratio
+                sb_strict = base_sb * (penalty_factor ** 2) * depth_conf
+            else:
+                # Low depth but ratio OK → Still penalize uncertainty
+                sb_strict = base_sb * depth_conf
+        elif failed_25_rule:
+            # Medium/high depth, ratio-based penalty (original method)
             penalty_factor = min_ratio / self.config.min_strand_ratio
-            sb_strict = base_sb * (penalty_factor ** 2)
+            sb_strict = base_sb * (penalty_factor ** 2) * depth_conf
         else:
-            sb_strict = base_sb
+            # No issues detected
+            sb_strict = base_sb * depth_conf
 
         return sb_strict, min_ratio, failed_25_rule
+
+    def _binomial_test(self, n_forward: int, n_total: int) -> float:
+        """
+        Test if strand imbalance is statistically significant.
+
+        H0: p_forward = 0.5 (balanced strands)
+
+        Args:
+            n_forward: Number of forward strand reads
+            n_total: Total number of reads
+
+        Returns:
+            p-value from binomial test
+        """
+        from scipy.stats import binomtest
+
+        if n_total == 0:
+            return 1.0
+
+        result = binomtest(n_forward, n_total, p=0.5, alternative='two-sided')
+        return result.pvalue
+
+    def _get_depth_confidence(self, n_alt: int) -> float:
+        """
+        Calculate confidence score based on read depth.
+
+        Low depth = high uncertainty = low confidence
+
+        Args:
+            n_alt: Number of alternative allele reads
+
+        Returns:
+            Confidence score (0.0-1.0)
+        """
+        if n_alt < 10:
+            return 0.3   # Very uncertain
+        elif n_alt < 30:
+            return 0.6   # Moderately uncertain
+        elif n_alt < 100:
+            return 0.85  # Somewhat confident
+        else:
+            return 1.0   # Highly confident
 
     def calculate_position_bias(self, query_positions: List[int], read_lengths: List[int]) -> Tuple[float, float]:
         """
