@@ -12,14 +12,6 @@ The Allele-Specific Variant Detection Score (AVDS) is a training-free, interpret
 - **SB_strict** - Strict Strand Bias with 25% minimum rule (weight: 0.15)
 - **PB** - Position Bias (weight: 0.10)
 
-## Features
-
-✅ **Training-free** - No labeled dataset required
-✅ **Interpretable** - Each component has clear biological meaning
-✅ **Robust** - Weighted geometric mean prevents score inflation
-✅ **Fast** - Parallel processing support
-✅ **Comprehensive** - Handles BAM and CRAM files
-
 ## Installation
 
 ```bash
