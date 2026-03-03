@@ -151,47 +151,6 @@ results = pipeline.process_vcf(
 print(results.head())
 print(f"Mean AVDS: {results['avds_score'].mean():.2f}")
 ```
-
-## Docker Usage
-
-### Pull from Docker Hub (when published)
-
-```bash
-docker pull [username]/avds-calculator:latest
-```
-
-### Build locally
-
-```bash
-cd vLoD_2026
-docker build -t avds-calculator .
-```
-
-### Run with Docker
-
-```bash
-# Basic usage
-docker run -v /path/to/data:/data avds-calculator \
-  -v /data/variants.vcf.gz \
-  -b /data/alignment.bam \
-  -o /data/avds_results.tsv
-
-# With custom parameters
-docker run -v $(pwd)/data:/data avds-calculator \
-  -v /data/variants.vcf.gz \
-  -b /data/alignment.bam \
-  -o /data/avds_results.tsv \
-  --theta-vaf 0.10 \
-  -t 8
-```
-
-### Using docker-compose
-
-```bash
-# Edit docker-compose.yml with your file paths
-docker-compose up
-```
-
 ## Version History
 
 - **v1.0** (February 2026) - Initial release
